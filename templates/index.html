@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GPC Automation</title>
+  <title>Play Console Automation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -65,9 +66,18 @@
       border-radius: 6px;
       cursor: pointer;
       transition: background-color 0.3s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
     }
 
-    button:hover {
+    button[disabled] {
+      background-color: #a0c4ff;
+      cursor: not-allowed;
+    }
+
+    button:hover:not([disabled]) {
       background-color: #0069d9;
     }
 
@@ -76,20 +86,38 @@
       color: #555;
       text-align: center;
       margin-top: 10px;
+      min-height: 24px;
+    }
+
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .toast {
       position: fixed;
       top: 20px;
       right: 20px;
-      background-color: #ff4d4d;
-      color: white;
       padding: 10px 20px;
       border-radius: 6px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      color: white;
       z-index: 1000;
       animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      font-size: 14px;
     }
+
+    .toast.success { background-color: #28a745; }
+    .toast.error { background-color: #ff4d4d; }
 
     @keyframes fadein {
       from { opacity: 0; right: 0; }
@@ -106,23 +134,27 @@
   <div class="container">
     <h1>Play Console Automation</h1>
     <form id="automation-form">
-      <textarea name="app_names" id="app_names"></textarea>
+      <textarea name="app_names" id="app_names" placeholder="Enter app names here..."></textarea>
       <div class="instructions">
         - Enter one app name per line.<br>
-        - Maximum 30 characters per app name.<br>
+        - Max 30 characters per app name.<br>
         - No empty lines allowed.
       </div>
-      <button type="submit">Run Automation</button>
+      <button type="submit" id="submit-btn">
+        Run Automation
+      </button>
     </form>
     <p id="status"></p>
   </div>
 
   <script>
     const form = document.getElementById('automation-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusEl = document.getElementById('status');
 
-    function showToast(message) {
+    function showToast(message, type = 'error') {
       const toast = document.createElement('div');
-      toast.className = 'toast';
+      toast.className = `toast ${type}`;
       toast.innerText = message;
       document.body.appendChild(toast);
       setTimeout(() => {
@@ -130,15 +162,26 @@
       }, 3000);
     }
 
+    function setLoadingState(isLoading) {
+      if (isLoading) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<div class="spinner"></div> Processing...`;
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `Run Automation`;
+      }
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      statusEl.innerText = '';
+      setLoadingState(true);
 
       const textarea = form.querySelector('textarea');
       const appNames = textarea.value.split('\n').map(name => name.trim()).filter(name => name !== '');
 
-      // Validate each app name
+      // Validate
       const invalidNames = appNames.filter(name => name.length > 30 || name.length === 0);
-
       if (invalidNames.length > 0) {
         invalidNames.forEach(name => {
           if (name.length === 0) {
@@ -147,20 +190,52 @@
             showToast(`"${name}" exceeds 30 characters.`);
           }
         });
-        return; // Don't proceed if validation fails
+        setLoadingState(false);
+        return;
       }
 
-      // Proceed if validation passes
+      // Send
       const formData = new FormData();
-      appNames.forEach(name => formData.append('app_names', name));
+      formData.append('app_names', appNames.join('\n'));
 
-      const response = await fetch('/run_automation', {
-        method: 'POST',
-        body: formData
-      });
+      try {
+        const response = await fetch('/run_automation', {
+          method: 'POST',
+          body: formData
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+          showToast(result.message, 'success');
+          statusEl.innerText = "Automation is running...";
 
-      const result = await response.json();
-      document.getElementById('status').innerText = result.message;
+          // Start polling to check when it's done
+          const intervalId = setInterval(async () => {
+            try {
+              const statusResponse = await fetch('/automation_status');
+              const statusResult = await statusResponse.json();
+
+              if (!statusResult.running) {
+                clearInterval(intervalId);
+                statusEl.innerText = "Automation completed successfully!";
+                showToast("Automation completed!", 'success');
+              }
+            } catch (err) {
+              console.error('Error checking automation status', err);
+              clearInterval(intervalId);
+              showToast('Error checking automation status.', 'error');
+            }
+          }, 2000); // check every 2 seconds
+        } else {
+          showToast(result.message, 'error');
+          statusEl.innerText = result.message;
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Server error occurred!', 'error');
+        statusEl.innerText = 'Error communicating with server.';
+      } finally {
+        setLoadingState(false);
+      }
     });
   </script>
 </body>

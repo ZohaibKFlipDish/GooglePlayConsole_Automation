@@ -6,8 +6,12 @@ from threading import Thread
 
 app = Flask(__name__)
 
+automation_status = {"running": False}
+
 def run_automation_in_thread(app_names):
+    automation_status["running"] = True
     asyncio.run(automate_play_console(app_names))
+    automation_status["running"] = False
 
 DEFAULT_TIMEOUT = 30000
 
@@ -817,8 +821,12 @@ def run_automation():
         app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
         thread = Thread(target=run_automation_in_thread, args=(app_names,))
         thread.start()
-        return jsonify({"status": "success", "message": "Automation started successfully!"})
+        return jsonify({"status": "success", "message": "Automation started!"})
     return jsonify({"status": "error", "message": "No app names provided!"})
+
+@app.route('/automation_status', methods=['GET'])
+def automation_status_check():
+    return jsonify({"running": automation_status["running"]})
 
 if __name__ == '__main__':
     app.run(debug=True)
