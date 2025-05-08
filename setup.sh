@@ -1,23 +1,22 @@
 #!/bin/bash
 
-# Exit on any error
+# Exit immediately if any command fails
 set -e
 
-echo "🚀 Setting up environment..."
-
-# Create and activate virtual environment
+echo "📦 Creating virtual environment..."
 python3 -m venv venv
+
+echo "📦 Activating virtual environment..."
 source venv/bin/activate
 
-echo "✅ Virtual environment created and activated."
-
-# Upgrade pip
+echo "📦 Upgrading pip..."
 pip install --upgrade pip
 
-# Install all required Python packages
-pip install -r requirements.txt
+echo "📦 Installing required Python packages..."
+pip install Flask playwright
 
-# Install Playwright browser binaries
+echo "🎭 Installing Playwright browsers (Chromium, Firefox, WebKit)..."
 playwright install
 
-echo "✅ All setup complete! You can now run the app using: source venv/bin/activate && python app.py"
+echo "✅ Setup complete! Run your app with:"
+echo "source venv/bin/activate && python GPC_Automation.py"
