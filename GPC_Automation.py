@@ -4,6 +4,10 @@ from playwright.async_api import async_playwright, TimeoutError as PlaywrightTim
 import asyncio
 from threading import Thread
 import json
+import subprocess
+
+# Install Chromium if not already installed
+subprocess.run(["playwright", "install", "chromium"], check=True)
 
 STORAGE_PATH = os.path.join(os.getcwd(), "storage", "auth.json")
 
