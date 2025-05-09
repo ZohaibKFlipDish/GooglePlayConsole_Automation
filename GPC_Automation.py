@@ -822,19 +822,28 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
 def index():
     return render_template('index.html')
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return "Server is healthy!", 200
+
 @app.route('/run_automation', methods=['POST'])
 def run_automation():
-    app_names_input = request.form.get("app_names")
-    if app_names_input:
-        app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
-        thread = Thread(target=run_automation_in_thread, args=(app_names,))
-        thread.start()
-        return jsonify({"status": "success", "message": "Automation started!"})
-    return jsonify({"status": "error", "message": "No app names provided!"})
+    try:
+        app_names_input = request.form.get("app_names")
+        if app_names_input:
+            app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
+            thread = Thread(target=run_automation_in_thread, args=(app_names,))
+            thread.start()
+            return jsonify({"status": "success", "message": "Automation started!"})
+        return jsonify({"status": "error", "message": "No app names provided!"})
+    except Exception as e:
+        print(f"🔥 Crash during run_automation: {e}")
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/automation_status', methods=['GET'])
 def automation_status_check():
     return jsonify({"running": automation_status["running"]})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5050))
+    app.run(host='0.0.0.0', port=port)

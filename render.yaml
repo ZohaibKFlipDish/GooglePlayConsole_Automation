@@ -2,11 +2,10 @@ services:
   - type: web
     name: gpc-automation
     env: python
-    plan: free
     buildCommand: |
       pip install -r requirements.txt
       playwright install chromium
     startCommand: python GPC_Automation.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: 0
