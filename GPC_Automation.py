@@ -242,7 +242,7 @@ async def wait_for_login(page):
 
 async def automate_play_console(app_names):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
 
         # Create context with or without storage
         if os.path.exists(STORAGE_PATH):
