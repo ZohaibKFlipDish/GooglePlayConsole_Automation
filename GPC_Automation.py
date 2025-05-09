@@ -15,11 +15,6 @@ app = Flask(__name__)
 
 automation_status = {"running": False}
 
-def run_automation_in_thread(app_names):
-    automation_status["running"] = True
-    asyncio.run(automate_play_console(app_names))
-    automation_status["running"] = False
-
 DEFAULT_TIMEOUT = 30000
 
 async def wait_for_element(page, selector, timeout=DEFAULT_TIMEOUT, state="visible"):
@@ -836,13 +831,17 @@ def run_automation():
         app_names_input = request.form.get("app_names")
         if app_names_input:
             app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
-            thread = Thread(target=run_automation_in_thread, args=(app_names,))
-            thread.start()
+            
+            # Instead of starting a thread, just run the async function directly
+            asyncio.run(automate_play_console(app_names))
+            
             return jsonify({"status": "success", "message": "Automation started!"})
+        
         return jsonify({"status": "error", "message": "No app names provided!"})
     except Exception as e:
         print(f"🔥 Crash during run_automation: {e}")
         return jsonify({"status": "error", "message": str(e)})
+
 
 @app.route('/automation_status', methods=['GET'])
 def automation_status_check():
