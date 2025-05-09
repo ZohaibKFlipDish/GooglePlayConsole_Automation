@@ -3,6 +3,9 @@ from flask import Flask, render_template, request, jsonify
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 import asyncio
 from threading import Thread
+import json
+
+STORAGE_PATH = os.path.join(os.getcwd(), "storage", "auth.json")
 
 app = Flask(__name__)
 
@@ -239,40 +242,45 @@ async def wait_for_login(page):
 
 async def automate_play_console(app_names):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False, args=["--start-maximized"])
-        context = await browser.new_context(no_viewport=True)
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+
+        # Create context with or without storage
+        if os.path.exists(STORAGE_PATH):
+            print("✅ Found existing session, loading it...")
+            context = await browser.new_context(storage_state=STORAGE_PATH, no_viewport=True)
+        else:
+            print("🔓 No saved session, starting fresh...")
+            context = await browser.new_context(no_viewport=True)
+
         page = await context.new_page()
         
         # Initial navigation to Play Console
         await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app")
-        
-        # Wait for manual login
-        print("Please log in manually in the browser window...")
-        await page.wait_for_selector("#main-content", timeout=0)  # No timeout - waits forever
-        
-        print("Login detected, continuing automation...")
+
+        if not os.path.exists(STORAGE_PATH):
+            print("🔐 Waiting for manual login...")
+            await page.wait_for_selector("#main-content", timeout=0)
+            print("🔒 Login successful, saving session...")
+            await context.storage_state(path=STORAGE_PATH)
+
+        print("🚀 Continuing automation...")
         
         for app_name in app_names:
-            print(f"\n=== Processing app: {app_name} ===")
-            
             try:
-                # Navigate to create new app page at start of each iteration
+                print(f"\n=== Processing app: {app_name} ===")
+                
                 await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app")
                 await page.wait_for_selector("#main-content", state="visible", timeout=DEFAULT_TIMEOUT)
-                
-                # Clear and fill the app name field
+
                 input_xpath = '//*[@id="main-content"]/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/create-new-app-page/console-form/console-form-row[1]/div/div[2]/div[1]/material-input/label/input'
                 input_field = await wait_for_element(page, f'xpath={input_xpath}')
-                
-                # Clear the field first in case there's existing text
+
                 await input_field.fill("")
-                await asyncio.sleep(0.5)  # Small delay to ensure field is cleared
-                
-                # Fill with new app name
+                await asyncio.sleep(0.5)
                 await input_field.fill(app_name)
                 await asyncio.sleep(0.5)
 
-                print(f"App name '{app_name}' entered successfully.")
+                print(f"✅ App name '{app_name}' entered successfully.")
 
                 await click_button_by_material_radio_debug_id(page, "app-radio")
                 print("Radio button 'app-radio' clicked.")
@@ -829,4 +837,6 @@ def automation_status_check():
     return jsonify({"running": automation_status["running"]})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
