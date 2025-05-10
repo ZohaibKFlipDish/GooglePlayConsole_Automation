@@ -315,7 +315,7 @@ async def automate_play_console(app_names):
 
                 # Click on the View Tasks
                 try:                
-                    async with page.expect_navigation(wait_until="load"):
+                    async with page.expect_navigation(wait_until="load", timeout=0):
                         await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/div/console-button-set/div/button/material-icon/i")
                     print("✅ Successfully navigated to app dashboard after creating app.", flush=True)
 
