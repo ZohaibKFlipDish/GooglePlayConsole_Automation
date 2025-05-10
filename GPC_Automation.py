@@ -243,7 +243,7 @@ async def automate_play_console(app_names):
     async with async_playwright() as p:
         print("Launching browser...")
         browser = await p.chromium.launch(
-            headless=False,  # Try with False to see what's happening
+            headless=True,  # Try with False to see what's happening
             args=["--no-sandbox", "--start-maximized", "--disable-gpu", "--single-process"]  # Additional args for stability
         )
 
