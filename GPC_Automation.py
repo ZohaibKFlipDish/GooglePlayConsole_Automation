@@ -17,10 +17,10 @@ app = Flask(__name__)
 
 automation_status = {"running": False}
 
-DEFAULT_TIMEOUT = 30000
+DEFAULT_TIMEOUT = 300000
 
-async def wait_for_element(page, selector, timeout=DEFAULT_TIMEOUT, state="visible"):
-    """Wait for element with enhanced visibility checks"""
+async def wait_for_element(page, selector, timeout=300_000, state="visible"):
+    """Wait up to 5 minutes for element with enhanced visibility checks"""
     try:
         element = await page.wait_for_selector(
             selector,
@@ -61,7 +61,8 @@ async def click_button_by_material_radio_debug_id(page, debug_id):
 async def click_button_by_console_form_expandable_debug_id(page, debug_id):
     selector = f"console-form-expandable-section[debug-id='{debug_id}'] input[type='radio']"
     element = await wait_for_element(page, selector)
-    await element.click()
+    await click_element(page, element, f"console-form-expandable {debug_id}")
+
 
 async def click_button_by_material_radio_group_debug_id(page, debug_id, index=0):
     """
@@ -312,10 +313,9 @@ async def automate_play_console(app_names):
                     print("❌ An error occurred:", e, flush=True)
                     traceback.print_exc(file=sys.stdout)
 
-
                 # Click on the View Tasks
                 try:                
-                    async with page.expect_navigation(wait_until="load", timeout=0):
+                    async with page.expect_navigation(wait_until="load", timeout=300_000):  # 5 minutes timeout
                         await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/div/console-button-set/div/button/material-icon/i")
                     print("✅ Successfully navigated to app dashboard after creating app.", flush=True)
 
