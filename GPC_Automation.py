@@ -242,7 +242,7 @@ async def wait_for_login(page):
 async def automate_play_console(app_names):
     async with async_playwright() as p:
         browser = await p.chromium.launch(
-            headless=False,  # must be False to see the window maximized
+            headless=True,  # must be False to see the window maximized
             args=["--no-sandbox", "--start-maximized"]
         )
 
