@@ -339,7 +339,14 @@ async def automate_play_console(app_names):
                 await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-privacy-policy-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
 
                 # App access
-                await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[2]/div/div[2]/div/material-icon/i")
+                try:                
+                    async with page.expect_navigation(wait_until="load", timeout=300_000):  # 5 minutes timeout
+                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[2]/div/div[2]/div/material-icon/i")
+                    print("✅ Successfully navigated to app dashboard after creating app.", flush=True)
+
+                except Exception as e:
+                    print("❌ An error occurred:", e, flush=True)
+                    traceback.print_exc(file=sys.stdout)
 
                 # Login required
                 await click_button_by_console_form_expandable_debug_id(page, "login-required-expandable-section")
