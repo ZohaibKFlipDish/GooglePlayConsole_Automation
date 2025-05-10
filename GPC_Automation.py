@@ -241,10 +241,9 @@ async def wait_for_login(page):
 
 async def automate_play_console(app_names):
     async with async_playwright() as p:
-        print("Launching browser...")
         browser = await p.chromium.launch(
-            headless=True,  # Try with False to see what's happening
-            args=["--no-sandbox", "--start-maximized", "--disable-gpu", "--single-process"]  # Additional args for stability
+            headless=True,  # must be False to see the window maximized
+            args=["--no-sandbox", "--start-maximized"]
         )
 
         context = await browser.new_context(viewport=None)  # Important: viewport=None lets the window use full size
@@ -302,10 +301,14 @@ async def automate_play_console(app_names):
                 await click_checkbox_by_debug_id(page, "export-laws-checkbox")
 
                 # Create App button
-                await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/create-new-app-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div/material-button[1]/button/div[2]")
+                async with page.expect_navigation(wait_until="load"):
+                    await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/create-new-app-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div/material-button[1]/button/div[2]")
+                print("✅ Successfully navigated to app dashboard after creating app.")
 
                 # Click on the View Tasks
-                await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[1]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/div/console-button-set/div/button/material-icon/i")
+                async with page.expect_navigation(wait_until="load"):
+                    await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/div/console-button-set/div/button/material-icon/i")
+                print("✅ Successfully navigated to app dashboard after creating app.")
 
                 # Click on the Set privacy policy
                 await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[1]/div/div[2]/div/material-icon/i")
