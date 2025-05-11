@@ -2,11 +2,8 @@ import os
 from flask import Flask, render_template, request, jsonify
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 import asyncio
-from threading import Thread
-import json
 import subprocess
-import sys
-import traceback
+import json
 
 # Install Chromium if not already installed
 subprocess.run(["playwright", "install", "chromium"], check=True)
@@ -17,19 +14,15 @@ app = Flask(__name__)
 
 automation_status = {"running": False}
 
-DEFAULT_TIMEOUT = 300000
+DEFAULT_TIMEOUT = 300000  # 5 minutes timeout
 
-async def wait_for_element(page, selector, timeout=300_000, state="visible"):
-    """Wait up to 5 minutes for element with enhanced visibility checks"""
+async def wait_for_element(page, selector, timeout=DEFAULT_TIMEOUT, state="visible"):
+    """Wait up to 5 minutes for element with enhanced visibility checks."""
     try:
-        element = await page.wait_for_selector(
-            selector,
-            timeout=timeout,
-            state=state
-        )
+        element = await page.wait_for_selector(selector, timeout=timeout, state=state)
         await element.scroll_into_view_if_needed()
         return element
-    except PlaywrightTimeoutError as e:
+    except PlaywrightTimeoutError:
         print(f"⏰ Timeout {timeout}ms waiting for element: {selector}", flush=True)
         raise
     except Exception as e:
@@ -37,21 +30,21 @@ async def wait_for_element(page, selector, timeout=300_000, state="visible"):
         raise
 
 async def click_element(page, element, description=""):
-    """Enhanced click with multiple fallback methods"""
+    """Enhanced click with multiple fallback methods."""
     try:
         await element.click()
         print(f"✅ Clicked {description}", flush=True)
-    except Exception as click_error:
+    except Exception:
         try:
             await element.dispatch_event('click')
             print(f"ℹ️ Used dispatch_event for {description}", flush=True)
-        except Exception as dispatch_error:
+        except Exception:
             try:
                 await page.evaluate("el => el.click()", element)
                 print(f"ℹ️ Used JS click for {description}", flush=True)
-            except Exception as js_error:
+            except Exception:
                 print(f"❌ Failed to click {description}", flush=True)
-                raise click_error
+                raise
 
 async def click_button_by_material_radio_debug_id(page, debug_id):
     selector = f"material-radio[debug-id='{debug_id}'] input[type='radio']"
@@ -63,39 +56,27 @@ async def click_button_by_console_form_expandable_debug_id(page, debug_id):
     element = await wait_for_element(page, selector)
     await click_element(page, element, f"console-form-expandable {debug_id}")
 
-
 async def click_button_by_material_radio_group_debug_id(page, debug_id, index=0):
-    """
-    Robust radio group click that:
-    1. Uses existing wait_for_element function
-    2. Waits for container to be visible
-    3. Waits for specific radio button to be ready
-    4. Provides clear debugging
-    """
-    # First wait for the container
     group_selector = f"material-radio-group[debug-id='{debug_id}']"
     try:
         group = await wait_for_element(page, group_selector)
         print(f"✅ Radio group container found: {debug_id}", flush=True)
-    except Exception as e:
+    except Exception:
         print(f"❌ Failed to find radio group container: {debug_id}", flush=True)
-        raise Exception(f"Radio group container '{debug_id}' not found") from e
+        raise
 
-    # Then wait for radio buttons
     radio_selector = f"{group_selector} input[type='radio'], {group_selector} [role='radio']"
     try:
         await wait_for_element(page, radio_selector)
         radio_buttons = await page.query_selector_all(radio_selector)
-        
+
         if len(radio_buttons) <= index:
             raise Exception(f"Only found {len(radio_buttons)} radio buttons (needed index {index})")
-        
+
         target = radio_buttons[index]
         await click_element(page, target, f"radio button {index} in group {debug_id}")
-        
+
     except Exception as e:
-        print(f"❌ Failed to click radio button: {debug_id} index {index}", flush=True)
-        # Debug what radio buttons were actually found
         found_count = len(await page.query_selector_all(radio_selector))
         print(f"  Found {found_count} radio buttons in group", flush=True)
         raise Exception(f"Failed to click radio button {index} in group '{debug_id}'") from e
@@ -135,91 +116,68 @@ async def click_button_ingroup_by_material_radio_group_debug_id(page, parent_deb
         print(f"Error while interacting: {e}", flush=True)
 
 async def click_button_by_xpath(page, xpath):
-    """Enhanced XPath click with better waiting"""
     try:
         element = await wait_for_element(page, f'xpath={xpath}')
         await click_element(page, element, f"XPath {xpath}")
-    except Exception as e:
+    except Exception:
         print(f"❌ XPath click failed: {xpath}", flush=True)
         raise
 
-
 async def click_checkbox_by_debug_id(page, debug_id, index=0):
     try:
-        # Wait for container first
         container_selector = f"material-checkbox[debug-id='{debug_id}']"
         await wait_for_element(page, container_selector)
-        
+
         checkboxes = await page.query_selector_all(container_selector)
         if index >= len(checkboxes):
             print(f"Invalid index {index}. Only {len(checkboxes)} checkboxes available.", flush=True)
             return
-            
+
         container = checkboxes[index]
         await page.evaluate("el => el.scrollIntoView({ behavior: 'smooth', block: 'center' })", container)
         checkbox = await container.query_selector("input[type='checkbox']")
-        await click_element(page, checkbox, f"checkbox {debug_id}")  # Use your click_element
+        await click_element(page, checkbox, f"checkbox {debug_id}")
         print(f"Checkbox {index} clicked.", flush=True)
     except Exception as e:
         print(f"Checkbox click error: {e}", flush=True)
         raise
 
 async def upload_csv_from_static_file(page, filename, timeout=30000):
-    """
-    Upload CSV file from static folder with improved waiting and error handling.
-    
-    Args:
-        page: Playwright page object
-        filename: Name of file in static folder
-        timeout: Maximum time to wait for file input (ms)
-    """
     try:
-        # Validate file exists
         static_folder = os.path.join(os.getcwd(), 'static')
         file_path = os.path.join(static_folder, filename)
-        
+
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found in static folder: {filename}")
+
         if not filename.lower().endswith('.csv'):
             print(f"⚠️ Warning: File '{filename}' may not be a CSV file", flush=True)
 
-        # Wait for file input to be present in DOM
         file_input_selector = "input[type='file']"
-        
-        try:
-            file_input = await page.wait_for_selector(
-                file_input_selector,
-                state="attached",
-                timeout=timeout
-            )
-            
-            # Check if enabled
-            is_disabled = await file_input.get_attribute("disabled")
-            if is_disabled:
-                raise Exception("File input is disabled!")
-        except Exception as e:
-            raise Exception(f"File input not ready for upload: {str(e)}")
 
-        # Perform the upload with retry logic
+        file_input = await page.wait_for_selector(file_input_selector, state="attached", timeout=timeout)
+
+        is_disabled = await file_input.get_attribute("disabled")
+        if is_disabled:
+            raise Exception("File input is disabled!")
+
         max_retries = 2
         for attempt in range(max_retries):
             try:
                 await file_input.set_input_files(file_path)
-                
-                # Verify upload completed
                 files = await file_input.input_value()
                 if not files:
                     raise Exception("No files detected after upload")
-                    
+
                 print(f"✅ File '{filename}' uploaded successfully!", flush=True)
                 return
-                
-            except Exception as upload_error:
+
+            except Exception:
                 if attempt == max_retries - 1:
                     raise
                 print(f"⚠️ Upload attempt {attempt + 1} failed, retrying...", flush=True)
                 await asyncio.sleep(1)
-                
+
     except FileNotFoundError as e:
         print(f"❌ File error: {e}", flush=True)
         raise
@@ -228,12 +186,10 @@ async def upload_csv_from_static_file(page, filename, timeout=30000):
         raise
 
 async def wait_for_login(page):
-    """More reliable login detection"""
     print("🔐 Waiting for login... Please log in manually.", flush=True)
     try:
         await page.wait_for_selector("#main-content", timeout=0)
         print("🔓 Login detected", flush=True)
-        # Additional verification
         await page.wait_for_function(
             "() => document.readyState === 'complete'",
             timeout=DEFAULT_TIMEOUT
@@ -244,16 +200,8 @@ async def wait_for_login(page):
 
 async def automate_play_console(app_names):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,  # must be False to see the window maximized
-            args=["--no-sandbox", "--start-maximized"]
-        )
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--start-maximized"])
 
-        context = await browser.new_context(viewport=None)  # Important: viewport=None lets the window use full size
-        page = await context.new_page()
-
-
-        # Create context with or without storage
         if os.path.exists(STORAGE_PATH):
             print("✅ Found existing session, loading it...", flush=True)
             context = await browser.new_context(storage_state=STORAGE_PATH, no_viewport=True)
@@ -262,21 +210,32 @@ async def automate_play_console(app_names):
             context = await browser.new_context(no_viewport=True)
 
         page = await context.new_page()
-        
-        # Initial navigation to Play Console
-        await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app")
+
+        await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app", wait_until="domcontentloaded")
 
         if not os.path.exists(STORAGE_PATH):
             print("🔐 Waiting for manual login...", flush=True)
-            await page.wait_for_selector("#main-content", timeout=0)
-            print("🔒 Login successful, saving session...", flush=True)
+            await wait_for_login(page)
             await context.storage_state(path=STORAGE_PATH)
 
         print("🚀 Continuing automation...", flush=True)
-        
+
         for app_name in app_names:
             try:
                 print(f"\n=== Processing app: {app_name} ===", flush=True)
+
+                await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app", wait_until="domcontentloaded")
+                await page.wait_for_selector("#main-content", state="visible", timeout=DEFAULT_TIMEOUT)
+
+                input_xpath = '//*[@id="main-content"]/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/create-new-app-page/console-form/console-form-row[1]/div/div[2]/div[1]/material-input/label/input'
+                input_field = await wait_for_element(page, f'xpath={input_xpath}')
+
+                await input_field.fill("")
+                await asyncio.sleep(0.5)
+                await input_field.fill(app_name)
+                await asyncio.sleep(0.5)
+
+                print(f"✅ App name '{app_name}' entered successfully.", flush=True)
                 
                 await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app")
                 await page.wait_for_selector("#main-content", state="visible", timeout=DEFAULT_TIMEOUT)
@@ -839,11 +798,10 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 except Exception as e:
                     print(f"Failed to click the button: {e}")
 
-                print(f"=== Completed processing for app: {app_name} ===")
-                
+                print(f"=== Completed processing for app: {app_name} ===", flush=True)
+
             except Exception as e:
-                print(f"Error for {app_name}: {e}")
-                # Even if there was an error, try to continue with next app
+                print(f"Error for {app_name}: {e}", flush=True)
                 continue
 
         await browser.close()
@@ -862,17 +820,14 @@ def run_automation():
         app_names_input = request.form.get("app_names")
         if app_names_input:
             app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
-            
-            # Instead of starting a thread, just run the async function directly
             asyncio.run(automate_play_console(app_names))
-            
             return jsonify({"status": "success", "message": "Automation started!"})
-        
-        return jsonify({"status": "error", "message": "No app names provided!"})
-    except Exception as e:
-        print(f"🔥 Crash during run_automation: {e}")
-        return jsonify({"status": "error", "message": str(e)})
 
+        return jsonify({"status": "error", "message": "No app names provided!"})
+
+    except Exception as e:
+        print(f"🔥 Crash during run_automation: {e}", flush=True)
+        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/automation_status', methods=['GET'])
 def automation_status_check():
