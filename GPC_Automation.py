@@ -415,12 +415,8 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 await click_checkbox_by_debug_id(page, "iarc-tou-checkbox")
 
                 # Next button
-                try:
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-rating-iarc-questionnaire-page/console-form/fill-questionnaire-flow/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item/button/span")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-testing-credentials-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span")
+                await asyncio.sleep(5)
 
                 # All other app types
                 try:
@@ -453,11 +449,11 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
 
                 # Next button
                 try:
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-rating-iarc-questionnaire-page/console-form/fill-questionnaire-flow/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item/button/span")
+                    xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-rating-iarc-questionnaire-page/console-form/fill-questionnaire-flow/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item/button/span"
+                    await click_button_by_xpath(page, xpath)
                 except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                    print(f"Failed to click the button: {e}")
+                await asyncio.sleep(5)
 
                 # Save button
                 try:
