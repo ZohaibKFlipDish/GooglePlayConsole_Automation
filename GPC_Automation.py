@@ -4,6 +4,8 @@ from playwright.async_api import async_playwright, TimeoutError as PlaywrightTim
 import asyncio
 import subprocess
 import json
+import sys
+import traceback
 
 # Install Chromium if not already installed
 subprocess.run(["playwright", "install", "chromium"], check=True)
