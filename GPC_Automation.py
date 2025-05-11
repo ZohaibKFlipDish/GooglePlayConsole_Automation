@@ -823,6 +823,8 @@ def run_automation():
 def automation_status_check():
     return jsonify({"running": automation_status["running"]})
 
+# 🚀 Proper Flask server startup for Render
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5050))
+    port = int(os.environ.get('PORT', 10000))  # Use whatever default you want
+    print(f"🌐 Starting Flask server on port {port}...", flush=True)
     app.run(host='0.0.0.0', port=port)
