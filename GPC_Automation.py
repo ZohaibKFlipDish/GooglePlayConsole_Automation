@@ -147,40 +147,53 @@ async def click_checkbox_by_debug_id(page, debug_id, index=0):
 
 async def upload_csv_from_static_file(page, filename, timeout=30000):
     """
-    Upload CSV file from static folder and confirm upload reliably.
+    Upload CSV file from static folder, retrying up to 5 times if upload confirmation fails.
+
+    Args:
+        page: Playwright page object
+        filename: Name of file in static folder
+        timeout: Maximum time to wait for file input (ms)
     """
+    static_folder = os.path.join(os.getcwd(), 'static')
+    file_path = os.path.join(static_folder, filename)
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found in static folder: {filename}")
+    if not filename.lower().endswith('.csv'):
+        print(f"⚠️ Warning: File '{filename}' may not be a CSV file")
+
+    file_input_selector = "input[type='file']"
+    
     try:
-        static_folder = os.path.join(os.getcwd(), 'static')
-        file_path = os.path.join(static_folder, filename)
-
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found in static folder: {filename}")
-        if not filename.lower().endswith('.csv'):
-            print(f"⚠️ Warning: File '{filename}' may not be a CSV file")
-
-        file_input_selector = "input[type='file']"
-        file_input = await page.wait_for_selector(file_input_selector, state="attached", timeout=timeout)
+        file_input = await page.wait_for_selector(
+            file_input_selector,
+            state="attached",
+            timeout=timeout
+        )
 
         is_disabled = await file_input.get_attribute("disabled")
         if is_disabled:
             raise Exception("File input is disabled!")
-
-        # Upload file
-        await file_input.set_input_files(file_path)
-
-        # Dispatch change event
-        await page.dispatch_event(file_input_selector, "change")
-
-        # Confirm upload by checking files.length > 0
-        files_length = await page.eval_on_selector(file_input_selector, "el => el.files.length")
-        if files_length == 0:
-            raise Exception("File upload not confirmed on page!")
-
-        print(f"✅ File '{filename}' uploaded and detected!")
-
     except Exception as e:
-        print(f"❌ Upload failed: {str(e)}")
-        raise
+        raise Exception(f"File input not ready: {str(e)}")
+
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        try:
+            print(f"📤 Upload attempt {attempt} for '{filename}'...")
+            await file_input.set_input_files(file_path)
+            
+            # Wait to confirm upload (adjust selector if needed)
+            await page.wait_for_selector(f"text='{filename}'", timeout=5000)
+            print(f"✅ File '{filename}' uploaded and detected on page!")
+            return  # Success, exit function
+        
+        except Exception as e:
+            print(f"⚠️ Upload attempt {attempt} failed: {e}")
+            if attempt == max_attempts:
+                print(f"❌ Upload failed after {max_attempts} attempts for '{filename}'")
+                raise Exception(f"Upload failed: {str(e)}")
+            await asyncio.sleep(1)  # Wait before retrying
 
 async def automate_play_console(app_names):
     async with async_playwright() as p:
@@ -549,7 +562,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[3]/overflowable-item[3]/button/span")
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
 
                 # Dashboard button
                 await page.go_back(wait_until="load")
