@@ -288,6 +288,7 @@ async def automate_play_console(app_names):
                 input_xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-privacy-policy-page/div/console-block-1-column[2]/div/div/console-form/material-input/label/input"
                 text_field = await wait_for_element(page, f'xpath={input_xpath}')
                 await text_field.fill("https://www.flipdish.com/privacy-policy")
+                
 
                 # Save button
                 await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-privacy-policy-page/div/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span")
@@ -313,7 +314,7 @@ async def automate_play_console(app_names):
                 await click_button_by_console_form_expandable_debug_id(page, "login-required-expandable-section")
 
                 # Add instructions
-                await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-testing-credentials-page/console-block-1-column/div/div/console-form/console-form-expandable-section[2]/div/expandable-container/div/div/console-button-set/div/button/material-icon/i")
+                await click_button_by_xpath(page, "//*[@id='aC567E0CA-DEDA-4860-948E-7E96F0DF3AE7--67']/div/console-button-set/div/button/material-icon/i")
 
                 # Instructions
                 input_xpath = "//*[@id='default-acx-overlay-container']/div[2]/div/focus-trap/div[2]/relative-popup/div/span/div/div[2]/console-block-1-column/div/div/console-form/console-form-row[1]/div/div[2]/div[1]/material-input/label/input"
