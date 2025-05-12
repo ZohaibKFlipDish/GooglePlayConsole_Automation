@@ -35,6 +35,8 @@ async def wait_for_element(page, selector, timeout=DEFAULT_TIMEOUT, state="visib
 async def goto_app_section_until_success(page, app_id, section):
     url = f"https://play.google.com/console/u/0/developers/8453266419614197800/app/{app_id}/app-content/{section}?source=dashboard"
     print(f"🌐 Navigating to {section} page...", flush=True)
+    
+    retries = 0
     while True:
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=60000)  # 60 sec timeout
@@ -42,7 +44,14 @@ async def goto_app_section_until_success(page, app_id, section):
             break
         except Exception as e:
             print(f"⚠️ Failed to navigate ({e}), retrying...", flush=True)
-            await asyncio.sleep(2)  # Wait 2 seconds before trying again
+            retries += 1
+            if "Page crashed" in str(e) or retries > 5:
+                print("🔄 Refreshing page due to crash or too many retries...", flush=True)
+                try:
+                    await page.reload(wait_until="domcontentloaded")
+                except:
+                    pass  # Ignore reload errors
+            await asyncio.sleep(2)
 
 async def click_element(page, element, description=""):
     """Enhanced click with multiple fallback methods."""
