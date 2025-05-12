@@ -553,7 +553,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
 
                 # Dashboard button
                 try:
-                    await click_button_by_xpath(page, "//*[@id='console-root-021280']/console-chrome/div/material-drawer[2]/navigation/nav/div/div[1]/navigation-item/div/a/span")
+                    await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/material-drawer[2]/navigation/nav/div/div[1]/navigation-item/div/a/console-icon/material-icon/i")
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
                 await asyncio.sleep(10)
