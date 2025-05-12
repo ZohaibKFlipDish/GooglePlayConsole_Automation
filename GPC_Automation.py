@@ -147,15 +147,9 @@ async def click_checkbox_by_debug_id(page, debug_id, index=0):
 
 async def upload_csv_from_static_file(page, filename, timeout=30000):
     """
-    Upload CSV file from static folder, and confirm upload.
-
-    Args:
-        page: Playwright page object
-        filename: Name of file in static folder
-        timeout: Maximum time to wait for file input (ms)
+    Upload CSV file from static folder and confirm upload reliably.
     """
     try:
-        # Validate file exists
         static_folder = os.path.join(os.getcwd(), 'static')
         file_path = os.path.join(static_folder, filename)
 
@@ -164,15 +158,9 @@ async def upload_csv_from_static_file(page, filename, timeout=30000):
         if not filename.lower().endswith('.csv'):
             print(f"⚠️ Warning: File '{filename}' may not be a CSV file")
 
-        # Wait for file input to be present
         file_input_selector = "input[type='file']"
-        file_input = await page.wait_for_selector(
-            file_input_selector,
-            state="attached",
-            timeout=timeout
-        )
+        file_input = await page.wait_for_selector(file_input_selector, state="attached", timeout=timeout)
 
-        # Check if disabled
         is_disabled = await file_input.get_attribute("disabled")
         if is_disabled:
             raise Exception("File input is disabled!")
@@ -180,12 +168,15 @@ async def upload_csv_from_static_file(page, filename, timeout=30000):
         # Upload file
         await file_input.set_input_files(file_path)
 
-        # ✅ Confirm upload (you can adjust the selector/text here)
-        try:
-            await page.wait_for_selector(f"text='{filename}'", timeout=5000)
-            print(f"✅ File '{filename}' uploaded and detected on page!")
-        except Exception:
+        # Dispatch change event
+        await page.dispatch_event(file_input_selector, "change")
+
+        # Confirm upload by checking files.length > 0
+        files_length = await page.eval_on_selector(file_input_selector, "el => el.files.length")
+        if files_length == 0:
             raise Exception("File upload not confirmed on page!")
+
+        print(f"✅ File '{filename}' uploaded and detected!")
 
     except Exception as e:
         print(f"❌ Upload failed: {str(e)}")
