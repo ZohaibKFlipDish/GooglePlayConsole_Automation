@@ -549,14 +549,15 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[3]/overflowable-item[3]/button/span")
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
-                await asyncio.sleep(10)
+                await asyncio.sleep(40)
 
                 # Dashboard button
-                try:
-                    await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/material-drawer[2]/navigation/nav/div/div[1]/navigation-item/div/a/console-icon/material-icon/i")
+                try:                
+                    async with page.expect_navigation(wait_until="load", timeout=300_000):
+                        await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
                 except Exception as e:
-                    print(f"Failed to click the element: {e}")
-                await asyncio.sleep(10)
+                    print("❌ An error occurred:", e, flush=True)
+                    traceback.print_exc(file=sys.stdout)
 
                 # Government app button
                 try:                
