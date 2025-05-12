@@ -277,49 +277,19 @@ async def automate_play_console(app_names):
                     app_id = match.group(1)
                     print(f"🆔 Extracted App ID: {app_id}", flush=True)
 
-
-
-
-                # # Click on the View Tasks
-                # await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/div/console-button-set/div/button/material-icon/i")
-                
-                # # Click on the Set privacy policy
-                # try:                
-                #     async with page.expect_navigation(wait_until="load", timeout=300_000):
-                #         await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[1]/div/div[2]/div/material-icon/i")
-                # except Exception as e:
-                #     print("❌ An error occurred:", e, flush=True)
-                #     traceback.print_exc(file=sys.stdout)
-
-
+                # Privacy policy URL
                 await goto_app_section_until_success(page, app_id, "privacy-policy")
 
                 # Flipdish privacy policy URL
                 input_xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-privacy-policy-page/div/console-block-1-column[2]/div/div/console-form/material-input/label/input"
                 text_field = await wait_for_element(page, f'xpath={input_xpath}')
-                await text_field.fill("https://www.flipdish.com/privacy-policy")
-                
+                await text_field.fill("https://www.flipdish.com/privacy-policy")     
 
                 # Save button
                 await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-privacy-policy-page/div/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span")
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)
 
-                # # Dashboard button
-                # try:
-                #     async with page.expect_navigation(wait_until="load", timeout=300_000):
-                #         await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-privacy-policy-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
-                # except Exception as e:
-                #     print("❌ An error occurred:", e, flush=True)
-                #     traceback.print_exc(file=sys.stdout)
-
-                # # App access
-                # try:                
-                #     async with page.expect_navigation(wait_until="load", timeout=300_000):
-                #         await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[2]/div/div[2]/div/material-icon/i")
-                # except Exception as e:
-                #     print("❌ An error occurred:", e, flush=True)
-                #     traceback.print_exc(file=sys.stdout)
-
+                # App access URL
                 await goto_app_section_until_success(page, app_id, "testing-credentials")
 
                 # Login required
@@ -361,54 +331,20 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
 
                 # Save button
                 await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-testing-credentials-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span")
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)
 
-                # Dashboard button
-                try:
-                    await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-testing-credentials-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
-                except Exception as e:
-                    print("Normal click failed, trying JavaScript click...")
-                    button = await page.wait_for_selector("xpath=//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-testing-credentials-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i", timeout=5000)
-                    await page.evaluate("""
-                        (btn) => {
-                            ['click', 'mousedown', 'mouseup', 'mouseenter', 'mouseleave'].forEach(event => {
-                                const evt = new MouseEvent(event, { bubbles: true, cancelable: true });
-                                btn.dispatchEvent(evt);
-                            });
-                        }
-                    """, button)
-                    print("JavaScript click executed successfully.")
-
-                # Ads
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[3]/div/div[2]/div/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                # Ads URL
+                await goto_app_section_until_success(page, app_id, "ads-declaration")
 
                 # No ads
                 await click_button_by_material_radio_group_debug_id(page, "contains-ads-radio-group", index=1)
 
                 # Save button
                 await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-ads-declaration-page/div/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span")
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)
 
-                # Dashboard button
-                try:
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-ads-declaration-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
-
-                # Content ratings
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[4]/div/div[2]/div/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                # Content ratings URL
+                await goto_app_section_until_success(page, app_id, "content-rating-overview")
 
                 # Start questionnaire
                 try:
@@ -462,7 +398,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, xpath)
                 except Exception as e:
                     print(f"Failed to click the button: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
                 
                 # Next button
                 try:
@@ -477,23 +413,10 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, xpath)
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)           
 
-                # Dashboard button
-                try:
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-rating-overview-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)                   
-
-                # Target audience and content button
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[5]/div/div[2]/div/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                # Target audience and content URL
+                await goto_app_section_until_success(page, app_id, "target-audience-content")
 
                 # Target age button
                 try:
@@ -514,84 +437,63 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, xpath)
                 except Exception as e:
                     print(f"Failed to click the button: {e}")
-                await asyncio.sleep(5)                   
+                await asyncio.sleep(15)                                
 
-                # Dashboard button
+                # Data safety URL
+                await goto_app_section_until_success(page, app_id, "data-privacy-security")
+
+                # Import button
                 try:
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-target-audience-content-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
+                    xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/console-page-header/div/div/div/console-header/div/div/div[1]/div[2]/div/div/console-button-set/div/button[2]/span"
+                    await click_button_by_xpath(page, xpath)
                 except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)                   
+                    print(f"Failed to click the element: {e}")
 
-                # # Data safety button
-                # try:                
-                #     async with page.expect_navigation(wait_until="load", timeout=300_000):
-                #         await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[6]/div/div[2]/div/material-icon/i")
-                # except Exception as e:
-                #     print("❌ An error occurred:", e, flush=True)
-                #     traceback.print_exc(file=sys.stdout)
+                # Upload file
+                await upload_csv_from_static_file(page, "data_safety_export_Jan24.csv")
 
-                # # Import button
-                # try:
-                #     xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/console-page-header/div/div/div/console-header/div/div/div[1]/div[2]/div/div/console-button-set/div/button[2]/span"
-                #     await click_button_by_xpath(page, xpath)
-                # except Exception as e:
-                #     print(f"Failed to click the element: {e}")
-
-                # # Upload file
-                # await upload_csv_from_static_file(page, "data_safety_export_Jan24.csv")
-
-                # # Import button
-                # try:
-                #     xpath = "//*[@id='default-acx-overlay-container']/div[3]/div/focus-trap/div[2]/relative-popup/div/span/div/div[2]/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div/button[1]/span"
-                #     await click_button_by_xpath(page, xpath)
-                # except Exception as e:
-                #     print(f"Failed to click the element: {e}")
-
-                # # Import button
-                # try:
-                #     xpath = "//*[@id='default-acx-overlay-container']/div[4]/material-dialog/focus-trap/div[2]/div/footer/div/div/console-button-set/div/button[2]/span"
-                #     await click_button_by_xpath(page, xpath)
-                # except Exception as e:
-                #     print(f"Failed to click the element: {e}")
-
-                # # Next Buttons
-                # try:
-                #     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[1]/button/span")
-                # except Exception as e:
-                #     print(f"Failed to click the element: {e}")
-                # await asyncio.sleep(5)
-
-                # try:
-                #     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[1]/button/span")
-                # except Exception as e:
-                #     print(f"Failed to click the element: {e}")
-                # await asyncio.sleep(5)
-
-                # try:
-                #     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[1]/button/span")
-                # except Exception as e:
-                #     print(f"Failed to click the element: {e}")
-                # await asyncio.sleep(5)
-
-                # # Save button
-                # try:
-                #     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[3]/overflowable-item[3]/button/span")
-                # except Exception as e:
-                #     print(f"Failed to click the element: {e}")
-                # await asyncio.sleep(10)
-
-                # # Dashboard button
-                # await page.go_back(wait_until="load")
-
-                # Government app button
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[7]/div/div[2]/div/material-icon/i")
+                # Import button
+                try:
+                    xpath = "//*[@id='default-acx-overlay-container']/div[3]/div/focus-trap/div[2]/relative-popup/div/span/div/div[2]/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div/button[1]/span"
+                    await click_button_by_xpath(page, xpath)
                 except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                    print(f"Failed to click the element: {e}")
+
+                # Import button
+                try:
+                    xpath = "//*[@id='default-acx-overlay-container']/div[4]/material-dialog/focus-trap/div[2]/div/footer/div/div/console-button-set/div/button[2]/span"
+                    await click_button_by_xpath(page, xpath)
+                except Exception as e:
+                    print(f"Failed to click the element: {e}")
+
+                # Next Buttons
+                try:
+                    await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[1]/button/span")
+                except Exception as e:
+                    print(f"Failed to click the element: {e}")
+                await asyncio.sleep(5)
+
+                try:
+                    await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[1]/button/span")
+                except Exception as e:
+                    print(f"Failed to click the element: {e}")
+                await asyncio.sleep(5)
+
+                try:
+                    await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[1]/button/span")
+                except Exception as e:
+                    print(f"Failed to click the element: {e}")
+                await asyncio.sleep(5)
+
+                # Save button
+                try:
+                    await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[3]/overflowable-item[3]/button/span")
+                except Exception as e:
+                    print(f"Failed to click the element: {e}")
+                await asyncio.sleep(15)
+
+                # Government app URL
+                await goto_app_section_until_success(page, app_id, "government-apps")
 
                 # No government app button
                 await click_button_by_material_radio_debug_id(page, "no-radio")
@@ -602,23 +504,10 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-government-apps-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span")
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)
 
-                # Dashboard button
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-government-apps-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
-
-                # Financial features button
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[8]/div/div[2]/div/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                # Financial features URL
+                await goto_app_section_until_success(page, app_id, "financial-features")
 
                 # Financial features in your app
                 try:
@@ -637,23 +526,10 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-finance-declaration-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[3]/overflowable-item[3]/button/span")
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)
 
-                # Dashboard button
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-finance-declaration-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
-
-                # Health apps button
-                try:                
-                    async with page.expect_navigation(wait_until="load", timeout=300_000):
-                        await click_button_by_xpath(page, "/html/body/div[1]/root/console-chrome/div/div/div/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-dashboard-page/console-section[2]/div/div/console-block-1-column/div/div/setup-goal/goal/div/div[2]/expandable-area/expandable-container/div/div/div/div/task-group[1]/div[2]/div/task[9]/div/div[2]/div/material-icon/i")
-                except Exception as e:
-                    print("❌ An error occurred:", e, flush=True)
-                    traceback.print_exc(file=sys.stdout)
+                # Health apps URL
+                await goto_app_section_until_success(page, app_id, "health")
 
                 # App features button
                 try:
@@ -666,7 +542,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-health-page/policy-declaration/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span")
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(15)
 
                 # Dashboard button
                 try:                
