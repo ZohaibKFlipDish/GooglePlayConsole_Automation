@@ -829,10 +829,10 @@ def run_automation():
         app_names_input = request.form.get("app_names")
         if app_names_input:
             app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
-
-            # Launch the automation as a background thread
+            
+            # Launch automation in a background thread
             threading.Thread(target=lambda: asyncio.run(automate_play_console(app_names))).start()
-
+            
             return jsonify({"status": "success", "message": "Automation started!"})
 
         return jsonify({"status": "error", "message": "No app names provided!"})
@@ -841,8 +841,11 @@ def run_automation():
         print(f"🔥 Crash during run_automation: {e}", flush=True)
         return jsonify({"status": "error", "message": str(e)})
 
-# 🚀 Proper Flask server startup for Render
+@app.route('/automation_status', methods=['GET'])
+def automation_status_check():
+    return jsonify({"running": automation_status["running"]})
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))  # Use whatever default you want
-    print(f"🌐 Starting Flask server on port {port}...", flush=True)
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 5050))
+    app.run(host='0.0.0.0', port=port)  # exactly as Render expects
+
