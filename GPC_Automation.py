@@ -598,7 +598,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 except Exception as e:
                     print("❌ An error occurred:", e, flush=True)
                     traceback.print_exc(file=sys.stdout)
-
+                    
                 # Government app button
                 try:                
                     async with page.expect_navigation(wait_until="load", timeout=300_000):
