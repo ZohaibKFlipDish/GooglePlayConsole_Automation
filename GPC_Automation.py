@@ -558,23 +558,14 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[3]/overflowable-item[3]/button/span")
                 except Exception as e:
                     print(f"Failed to click the element: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
 
                 # Dashboard button
                 try:
-                    await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
+                    await click_button_by_xpath(page, "//*[@id='console-root-021280']/console-chrome/div/material-drawer[2]/navigation/nav/div/div[1]/navigation-item/div/a/span")
                 except Exception as e:
-                    print("Normal click failed, trying JavaScript click...")
-                    button = await page.wait_for_selector("xpath=//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i", timeout=5000)
-                    await page.evaluate("""
-                        (btn) => {
-                            ['click', 'mousedown', 'mouseup', 'mouseenter', 'mouseleave'].forEach(event => {
-                                const evt = new MouseEvent(event, { bubbles: true, cancelable: true });
-                                btn.dispatchEvent(evt);
-                            });
-                        }
-                    """, button)
-                    print("JavaScript click executed successfully.")
+                    print(f"Failed to click the element: {e}")
+                await asyncio.sleep(10)
 
                 # Government app button
                 try:                
