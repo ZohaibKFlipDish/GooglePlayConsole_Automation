@@ -6,6 +6,7 @@ import subprocess
 import json
 import sys
 import traceback
+import threading
 
 # Install Chromium if not already installed
 subprocess.run(["playwright", "install", "chromium"], check=True)
@@ -827,7 +828,10 @@ def run_automation():
         app_names_input = request.form.get("app_names")
         if app_names_input:
             app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
-            asyncio.run(automate_play_console(app_names))
+
+            # Launch the automation as a background thread
+            threading.Thread(target=lambda: asyncio.run(automate_play_console(app_names))).start()
+
             return jsonify({"status": "success", "message": "Automation started!"})
 
         return jsonify({"status": "error", "message": "No app names provided!"})
@@ -835,10 +839,6 @@ def run_automation():
     except Exception as e:
         print(f"🔥 Crash during run_automation: {e}", flush=True)
         return jsonify({"status": "error", "message": str(e)})
-
-@app.route('/automation_status', methods=['GET'])
-def automation_status_check():
-    return jsonify({"running": automation_status["running"]})
 
 # 🚀 Proper Flask server startup for Render
 if __name__ == '__main__':
