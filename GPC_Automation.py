@@ -417,7 +417,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
 
                 # Next button
                 try:
-                    xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-testing-credentials-page/publishing-bottom-bar/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item[2]/button/span"
+                    xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-rating-iarc-questionnaire-page/console-form/fill-questionnaire-flow/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item/button/span"
                     await click_button_by_xpath(page, xpath)
                 except Exception as e:
                     print(f"Failed to click the button: {e}")
@@ -450,7 +450,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 except Exception as e:
                     print(f"Failed to click the button: {e}")
                 await asyncio.sleep(5)
-
+                
                 # Next button
                 try:
                     xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-rating-iarc-questionnaire-page/console-form/fill-questionnaire-flow/form-bottom-bar/bottom-bar-base/div/div/div/div[2]/console-button-set/div[2]/overflowable-item/button/span"
