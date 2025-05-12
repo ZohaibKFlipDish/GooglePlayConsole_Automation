@@ -147,8 +147,8 @@ async def click_checkbox_by_debug_id(page, debug_id, index=0):
 
 async def upload_csv_from_static_file(page, filename, timeout=30000):
     """
-    Upload CSV file from static folder with improved waiting and error handling.
-    
+    Upload CSV file from static folder, and confirm upload.
+
     Args:
         page: Playwright page object
         filename: Name of file in static folder
@@ -158,67 +158,37 @@ async def upload_csv_from_static_file(page, filename, timeout=30000):
         # Validate file exists
         static_folder = os.path.join(os.getcwd(), 'static')
         file_path = os.path.join(static_folder, filename)
-        
+
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found in static folder: {filename}")
         if not filename.lower().endswith('.csv'):
             print(f"⚠️ Warning: File '{filename}' may not be a CSV file")
 
-        # Wait for file input to be present in DOM
+        # Wait for file input to be present
         file_input_selector = "input[type='file']"
-        
-        try:
-            file_input = await page.wait_for_selector(
-                file_input_selector,
-                state="attached",
-                timeout=timeout
-            )
-            
-            # Check if enabled
-            is_disabled = await file_input.get_attribute("disabled")
-            if is_disabled:
-                raise Exception("File input is disabled!")
-        except Exception as e:
-            raise Exception(f"File input not ready for upload: {str(e)}")
+        file_input = await page.wait_for_selector(
+            file_input_selector,
+            state="attached",
+            timeout=timeout
+        )
 
-        # Perform the upload with retry logic
-        max_retries = 2
-        for attempt in range(max_retries):
-            try:
-                await file_input.set_input_files(file_path)
-                
-                # Verify upload completed
-                files = await file_input.input_value()
-                if not files:
-                    raise Exception("No files detected after upload")
-                    
-                print(f"✅ File '{filename}' uploaded successfully!")
-                return
-                
-            except Exception as upload_error:
-                if attempt == max_retries - 1:
-                    raise
-                print(f"⚠️ Upload attempt {attempt + 1} failed, retrying...")
-                await asyncio.sleep(1)
-                
-    except FileNotFoundError as e:
-        print(f"❌ File error: {e}")
-        raise
+        # Check if disabled
+        is_disabled = await file_input.get_attribute("disabled")
+        if is_disabled:
+            raise Exception("File input is disabled!")
+
+        # Upload file
+        await file_input.set_input_files(file_path)
+
+        # ✅ Confirm upload (you can adjust the selector/text here)
+        try:
+            await page.wait_for_selector(f"text='{filename}'", timeout=5000)
+            print(f"✅ File '{filename}' uploaded and detected on page!")
+        except Exception:
+            raise Exception("File upload not confirmed on page!")
+
     except Exception as e:
         print(f"❌ Upload failed: {str(e)}")
-        raise
-
-async def wait_for_login(page):
-    print("🔐 Waiting for login... Please log in manually.", flush=True)
-    try:
-        await page.wait_for_selector("#main-content", timeout=0)
-        print("🔓 Login detected", flush=True)
-        await page.wait_for_function(
-            "() => document.readyState === 'complete'",
-            timeout=DEFAULT_TIMEOUT
-        )
-    except Exception as e:
-        print(f"❌ Login verification failed: {str(e)}", flush=True)
         raise
 
 async def automate_play_console(app_names):
@@ -548,8 +518,7 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                     print(f"Failed to click the element: {e}")
 
                 # Upload file
-                filename = "data_safety_export_Jan24.csv"
-                await upload_csv_from_static_file(page, filename)
+                await upload_csv_from_static_file(page, "data_safety_export_Jan24.csv")
 
                 # Import button
                 try:
