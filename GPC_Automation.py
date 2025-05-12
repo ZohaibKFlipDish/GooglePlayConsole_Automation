@@ -564,8 +564,17 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 try:
                     await click_button_by_xpath(page, "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i")
                 except Exception as e:
-                    print(f"Failed to click the element: {e}")
-                await asyncio.sleep(5)
+                    print("Normal click failed, trying JavaScript click...")
+                    button = await page.wait_for_selector("xpath=//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-play-safety-labels-page/console-page-header/div/div/div/console-button-set/div/a/material-icon/i", timeout=5000)
+                    await page.evaluate("""
+                        (btn) => {
+                            ['click', 'mousedown', 'mouseup', 'mouseenter', 'mouseleave'].forEach(event => {
+                                const evt = new MouseEvent(event, { bubbles: true, cancelable: true });
+                                btn.dispatchEvent(evt);
+                            });
+                        }
+                    """, button)
+                    print("JavaScript click executed successfully.")
 
                 # Government app button
                 try:                
