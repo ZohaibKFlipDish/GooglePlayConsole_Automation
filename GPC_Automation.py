@@ -32,11 +32,17 @@ async def wait_for_element(page, selector, timeout=DEFAULT_TIMEOUT, state="visib
         print(f"❌ Unexpected error waiting for element: {selector} - {str(e)}", flush=True)
         raise
 
-async def goto_app_section(page, app_id, section):
+async def goto_app_section_until_success(page, app_id, section):
     url = f"https://play.google.com/console/u/0/developers/8453266419614197800/app/{app_id}/app-content/{section}?source=dashboard"
-    await page.goto(url, wait_until="domcontentloaded")
-    await page.wait_for_selector("#main-content", timeout=DEFAULT_TIMEOUT)
-    print(f"🌐 Navigated to {section} page", flush=True)
+    print(f"🌐 Navigating to {section} page...", flush=True)
+    while True:
+        try:
+            await page.goto(url, wait_until="domcontentloaded", timeout=60000)  # 60 sec timeout
+            print(f"✅ Successfully navigated to {section}", flush=True)
+            break
+        except Exception as e:
+            print(f"⚠️ Failed to navigate ({e}), retrying...", flush=True)
+            await asyncio.sleep(2)  # Wait 2 seconds before trying again
 
 async def click_element(page, element, description=""):
     """Enhanced click with multiple fallback methods."""
@@ -285,7 +291,8 @@ async def automate_play_console(app_names):
                 #     print("❌ An error occurred:", e, flush=True)
                 #     traceback.print_exc(file=sys.stdout)
 
-                await goto_app_section(page, app_id, "privacy-policy")
+
+                await goto_app_section_until_success(page, app_id, "privacy-policy")
 
                 # Flipdish privacy policy URL
                 input_xpath = "//*[@id='main-content']/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/app-content-privacy-policy-page/div/console-block-1-column[2]/div/div/console-form/material-input/label/input"
@@ -313,7 +320,7 @@ async def automate_play_console(app_names):
                 #     print("❌ An error occurred:", e, flush=True)
                 #     traceback.print_exc(file=sys.stdout)
 
-                await goto_app_section(page, app_id, "testing-credentials")
+                await goto_app_section_until_success(page, app_id, "testing-credentials")
 
                 # Login required
                 await click_button_by_console_form_expandable_debug_id(page, "login-required-expandable-section")
