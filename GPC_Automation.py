@@ -832,8 +832,3 @@ def run_automation():
 @app.route('/automation_status', methods=['GET'])
 def automation_status_check():
     return jsonify({"running": automation_status["running"]})
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)  # exactly as Render expects
-
