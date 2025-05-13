@@ -275,7 +275,7 @@ async def automate_play_console(app_names):
                     print("❌ An error occurred:", e, flush=True)
                     traceback.print_exc(file=sys.stdout)
 
-                # 🌟 Get current URL and extract the app_id
+                # Get current URL and extract the app_id
                 created_app_url = page.url
                 print(f"🌐 Created app URL: {created_app_url}", flush=True)
 
