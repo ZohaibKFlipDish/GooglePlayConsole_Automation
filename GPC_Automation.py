@@ -7,6 +7,8 @@ import json
 import sys
 import traceback
 import threading
+from collections import deque
+import time
 
 # Install Chromium if not already installed
 subprocess.run(["playwright", "install", "chromium"], check=True)
@@ -15,6 +17,50 @@ STORAGE_PATH = os.path.join(os.getcwd(), "storage", "auth.json")
 
 app = Flask(__name__)
 
+# Queue system implementation
+class AutomationQueue:
+    def __init__(self):
+        self.queue = deque()
+        self.current_processing = None
+        self.lock = threading.Lock()
+        self.active = False
+    
+    def add_apps(self, app_names):
+        with self.lock:
+            timestamp = time.time()
+            for app_name in app_names:
+                self.queue.append({
+                    'app_name': app_name,
+                    'timestamp': timestamp
+                })
+            return len(self.queue)
+    
+    def get_next_app(self):
+        with self.lock:
+            if self.queue:
+                self.current_processing = self.queue.popleft()
+                return self.current_processing
+            return None
+    
+    def get_status(self):
+        with self.lock:
+            return {
+                'current': self.current_processing,
+                'queue_size': len(self.queue),
+                'queue_list': list(self.queue),
+                'active': self.active
+            }
+    
+    def start_processing(self):
+        with self.lock:
+            self.active = True
+    
+    def stop_processing(self):
+        with self.lock:
+            self.active = False
+            self.current_processing = None
+
+automation_queue = AutomationQueue()
 automation_status = {"running": False}
 
 DEFAULT_TIMEOUT = 300000  # 5 minutes timeout
@@ -216,7 +262,7 @@ async def upload_csv_from_static_file(page, filename, timeout=30000):
                 raise Exception(f"Upload failed: {str(e)}")
             await asyncio.sleep(1)  # Wait before retrying
 
-async def automate_play_console(app_names):
+async def automate_play_console():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--start-maximized"])
 
@@ -236,9 +282,18 @@ async def automate_play_console(app_names):
             await wait_for_login(page)
             await context.storage_state(path=STORAGE_PATH)
 
-        print("🚀 Continuing automation...", flush=True)
+        print("🚀 Automation worker ready to process queue...", flush=True)
+        automation_queue.start_processing()
+        automation_status["running"] = True
 
-        for app_name in app_names:
+        while True:
+            next_app = automation_queue.get_next_app()
+            if not next_app:
+                print("⏳ Queue is empty, waiting for new tasks...", flush=True)
+                await asyncio.sleep(5)
+                continue
+
+            app_name = next_app['app_name']
             try:
                 print(f"\n=== Processing app: {app_name} ===", flush=True)
 
@@ -275,7 +330,7 @@ async def automate_play_console(app_names):
                     print("❌ An error occurred:", e, flush=True)
                     traceback.print_exc(file=sys.stdout)
 
-                # Get current URL and extract the app_id
+                # 🌟 Get current URL and extract the app_id
                 created_app_url = page.url
                 print(f"🌐 Created app URL: {created_app_url}", flush=True)
 
@@ -698,13 +753,23 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 except Exception as e:
                     print(f"Failed to click the button: {e}")
 
-                print(f"=== Completed processing for app: {app_name} ===", flush=True)
+                automation_queue.get_next_app()  # It has already been popped, but you can add a status update here
 
+                print(f"App '{app_name}' processed and removed from queue.", flush=True)
+
+            except PlaywrightTimeoutError as e:
+                print(f"🔥 Timeout while processing app '{app_name}': {e}", flush=True)
             except Exception as e:
-                print(f"Error for {app_name}: {e}", flush=True)
-                continue
+                print(f"🔥 Error while processing app '{app_name}': {e}", flush=True)
 
-        await browser.close()
+            await asyncio.sleep(1)  # Allow time for queue status to update
+
+def start_automation():
+    asyncio.run(automate_play_console())
+
+# Start the worker thread when the app starts
+worker_thread = threading.Thread(target=start_automation, daemon=True)
+worker_thread.start()
 
 @app.route('/')
 def index():
@@ -720,11 +785,14 @@ def run_automation():
         app_names_input = request.form.get("app_names")
         if app_names_input:
             app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
+            queue_size = automation_queue.add_apps(app_names)
             
-            # Launch automation in a background thread
-            threading.Thread(target=lambda: asyncio.run(automate_play_console(app_names))).start()
-            
-            return jsonify({"status": "success", "message": "Automation started!"})
+            return jsonify({
+                "status": "success", 
+                "message": f"Automation started! {len(app_names)} apps added to queue.",
+                "queue_size": queue_size,
+                "running": automation_status["running"]
+            })
 
         return jsonify({"status": "error", "message": "No app names provided!"})
 
@@ -734,9 +802,14 @@ def run_automation():
 
 @app.route('/automation_status', methods=['GET'])
 def automation_status_check():
-    return jsonify({"running": automation_status["running"]})
+    status = automation_queue.get_status()
+    return jsonify({
+        "running": automation_status["running"],
+        "current_processing": status['current'],
+        "queue_size": status['queue_size'],
+        "queue_list": status['queue_list']
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5050))
-    app.run(host='0.0.0.0', port=port)  # exactly as Render expects
-
+    app.run(host='0.0.0.0', port=port)
