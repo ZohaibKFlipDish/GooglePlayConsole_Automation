@@ -63,7 +63,7 @@ class AutomationQueue:
 automation_queue = AutomationQueue()
 automation_status = {"running": False}
 
-DEFAULT_TIMEOUT = 300000  # 5 minutes timeout
+DEFAULT_TIMEOUT = 300000
 
 async def wait_for_element(page, selector, timeout=DEFAULT_TIMEOUT, state="visible"):
     """Wait up to 5 minutes for element with enhanced visibility checks."""
@@ -279,7 +279,7 @@ async def automate_play_console():
 
         if not os.path.exists(STORAGE_PATH):
             print("🔐 Waiting for manual login...", flush=True)
-            await wait_for_login(page)
+            await wait_for_login(page)  # Ensure this function exists!
             await context.storage_state(path=STORAGE_PATH)
 
         print("🚀 Automation worker ready to process queue...", flush=True)
@@ -759,10 +759,16 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
 
             except PlaywrightTimeoutError as e:
                 print(f"🔥 Timeout while processing app '{app_name}': {e}", flush=True)
+                # Optional retry:
+                # automation_queue.add_apps([app_name])
             except Exception as e:
                 print(f"🔥 Error while processing app '{app_name}': {e}", flush=True)
+                # Optional retry:
+                # automation_queue.add_apps([app_name])
+            finally:
+                automation_queue.current_processing = None  # ✅ Clear the processing flag
 
-            await asyncio.sleep(1)  # Allow time for queue status to update
+            await asyncio.sleep(1)
 
 def start_automation():
     asyncio.run(automate_play_console())
