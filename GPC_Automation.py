@@ -10,38 +10,38 @@ import threading
 from collections import deque
 import time
 
-# Install Chromium if not already installed
-subprocess.run(["playwright", "install", "chromium"], check=True)
+# Ensure Playwright Chromium is installed only once
+venv_bin = os.path.dirname(sys.executable)
+playwright_exec = os.path.join(venv_bin, "playwright")
+
+if not os.path.exists(os.path.join(os.path.expanduser("~"), ".cache", "ms-playwright")):
+    subprocess.run([playwright_exec, "install", "chromium"], check=True)
 
 STORAGE_PATH = os.path.join(os.getcwd(), "storage", "auth.json")
-
 app = Flask(__name__)
 
-# Queue system implementation
+# Queue system
 class AutomationQueue:
     def __init__(self):
         self.queue = deque()
         self.current_processing = None
         self.lock = threading.Lock()
         self.active = False
-    
+
     def add_apps(self, app_names):
         with self.lock:
             timestamp = time.time()
             for app_name in app_names:
-                self.queue.append({
-                    'app_name': app_name,
-                    'timestamp': timestamp
-                })
+                self.queue.append({'app_name': app_name, 'timestamp': timestamp})
             return len(self.queue)
-    
+
     def get_next_app(self):
         with self.lock:
             if self.queue:
                 self.current_processing = self.queue.popleft()
                 return self.current_processing
             return None
-    
+
     def get_status(self):
         with self.lock:
             return {
@@ -50,11 +50,11 @@ class AutomationQueue:
                 'queue_list': list(self.queue),
                 'active': self.active
             }
-    
+
     def start_processing(self):
         with self.lock:
             self.active = True
-    
+
     def stop_processing(self):
         with self.lock:
             self.active = False
@@ -62,8 +62,17 @@ class AutomationQueue:
 
 automation_queue = AutomationQueue()
 automation_status = {"running": False}
+DEFAULT_TIMEOUT = 300000  # 5 minutes
 
-DEFAULT_TIMEOUT = 300000
+# Wait for login (placeholder)
+async def wait_for_login(page):
+    print("🔐 Please log in manually...", flush=True)
+    while True:
+        try:
+            await page.wait_for_selector('text=Dashboard', timeout=5000)
+            break
+        except:
+            await asyncio.sleep(2)
 
 async def wait_for_element(page, selector, timeout=DEFAULT_TIMEOUT, state="visible"):
     """Wait up to 5 minutes for element with enhanced visibility checks."""
@@ -270,17 +279,13 @@ async def automate_play_console():
             print("✅ Found existing session, loading it...", flush=True)
             context = await browser.new_context(storage_state=STORAGE_PATH, no_viewport=True)
         else:
-            print("🔓 No saved session, starting fresh...")
+            print("🔓 No saved session, starting fresh...", flush=True)
             context = await browser.new_context(no_viewport=True)
-
-        page = await context.new_page()
-
-        await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app", wait_until="domcontentloaded")
-
-        if not os.path.exists(STORAGE_PATH):
-            print("🔐 Waiting for manual login...", flush=True)
-            await wait_for_login(page)  # Ensure this function exists!
+            page = await context.new_page()
+            await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app", wait_until="domcontentloaded")
+            await wait_for_login(page)
             await context.storage_state(path=STORAGE_PATH)
+            await page.close()
 
         print("🚀 Automation worker ready to process queue...", flush=True)
         automation_queue.start_processing()
@@ -289,20 +294,21 @@ async def automate_play_console():
         while True:
             next_app = automation_queue.get_next_app()
             if not next_app:
-                print("⏳ Queue is empty, waiting for new tasks...", flush=True)
+                print("⏳ Queue is empty, waiting...", flush=True)
                 await asyncio.sleep(5)
                 continue
 
             app_name = next_app['app_name']
+            page = await context.new_page()
+
             try:
                 print(f"\n=== Processing app: {app_name} ===", flush=True)
-
                 await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app", wait_until="domcontentloaded")
                 await page.wait_for_selector("#main-content", state="visible", timeout=DEFAULT_TIMEOUT)
 
                 input_xpath = '//*[@id="main-content"]/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/create-new-app-page/console-form/console-form-row[1]/div/div[2]/div[1]/material-input/label/input'
                 input_field = await wait_for_element(page, f'xpath={input_xpath}')
-
+                
                 await input_field.fill("")
                 await asyncio.sleep(0.5)
                 await input_field.fill(app_name)
@@ -753,30 +759,26 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 except Exception as e:
                     print(f"Failed to click the button: {e}")
 
-                automation_queue.get_next_app()  # It has already been popped, but you can add a status update here
-
-                print(f"App '{app_name}' processed and removed from queue.", flush=True)
+                print(f"✅ App '{app_name}' processed and removed from queue.", flush=True)
 
             except PlaywrightTimeoutError as e:
-                print(f"🔥 Timeout while processing app '{app_name}': {e}", flush=True)
-                # Optional retry:
-                # automation_queue.add_apps([app_name])
+                print(f"🔥 Timeout for '{app_name}': {e}", flush=True)
             except Exception as e:
-                print(f"🔥 Error while processing app '{app_name}': {e}", flush=True)
-                # Optional retry:
-                # automation_queue.add_apps([app_name])
+                print(f"🔥 Error processing '{app_name}': {e}", flush=True)
             finally:
-                automation_queue.current_processing = None  # ✅ Clear the processing flag
+                await page.close()
+                automation_queue.current_processing = None
 
-            await asyncio.sleep(1)
+            await asyncio.sleep(10)
+
 
 def start_automation():
     asyncio.run(automate_play_console())
 
-# Start the worker thread when the app starts
 worker_thread = threading.Thread(target=start_automation, daemon=True)
 worker_thread.start()
 
+# Flask routes
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -792,18 +794,17 @@ def run_automation():
         if app_names_input:
             app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
             queue_size = automation_queue.add_apps(app_names)
-            
+
             return jsonify({
-                "status": "success", 
+                "status": "success",
                 "message": f"Automation started! {len(app_names)} apps added to queue.",
                 "queue_size": queue_size,
                 "running": automation_status["running"]
             })
 
         return jsonify({"status": "error", "message": "No app names provided!"})
-
     except Exception as e:
-        print(f"🔥 Crash during run_automation: {e}", flush=True)
+        print(f"🔥 Crash in /run_automation: {e}", flush=True)
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/automation_status', methods=['GET'])
