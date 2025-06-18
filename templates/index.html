@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Google Play Console </title>
@@ -13,10 +14,9 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
       padding: 20px;
     }
-  
+
     .container {
       background: #ffffff;
       padding: 30px;
@@ -28,7 +28,7 @@
       flex-direction: column;
       gap: 20px;
     }
-  
+
     h1 {
       color: #333;
       text-align: center;
@@ -36,13 +36,13 @@
       margin-bottom: 15px;
       font-weight: 600;
     }
-  
+
     form {
       display: flex;
       flex-direction: column;
       gap: 15px;
     }
-  
+
     textarea {
       width: 100%;
       height: 180px;
@@ -55,13 +55,13 @@
       background-color: #f9f9f9;
       transition: border-color 0.3s;
     }
-  
+
     textarea:focus {
       border-color: #007bff;
       outline: none;
       background-color: #ffffff;
     }
-  
+
     .instructions {
       font-size: 14px;
       color: #777;
@@ -69,7 +69,7 @@
       text-align: left;
       margin-top: 5px;
     }
-  
+
     button {
       padding: 15px;
       font-size: 16px;
@@ -84,16 +84,16 @@
       align-items: center;
       gap: 10px;
     }
-  
+
     button[disabled] {
       background-color: #a0c4ff;
       cursor: not-allowed;
     }
-  
+
     button:hover:not([disabled]) {
       background-color: #0056b3;
     }
-  
+
     #status {
       font-size: 16px;
       color: #555;
@@ -101,7 +101,7 @@
       margin-top: 10px;
       min-height: 24px;
     }
-  
+
     .spinner {
       border: 2px solid #f3f3f3;
       border-top: 2px solid #fff;
@@ -110,12 +110,17 @@
       height: 16px;
       animation: spin 1s linear infinite;
     }
-  
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
-  
+
     .toast {
       position: fixed;
       top: 20px;
@@ -128,25 +133,39 @@
       animation: fadein 0.5s, fadeout 0.5s 2.5s;
       font-size: 14px;
     }
-  
+
     .toast.success {
       background-color: #28a745;
     }
-  
+
     .toast.error {
       background-color: #dc3545;
     }
-  
+
     @keyframes fadein {
-      from { opacity: 0; right: 0; }
-      to { opacity: 1; right: 20px; }
+      from {
+        opacity: 0;
+        right: 0;
+      }
+
+      to {
+        opacity: 1;
+        right: 20px;
+      }
     }
-  
+
     @keyframes fadeout {
-      from { opacity: 1; right: 20px; }
-      to { opacity: 0; right: 0; }
+      from {
+        opacity: 1;
+        right: 20px;
+      }
+
+      to {
+        opacity: 0;
+        right: 0;
+      }
     }
-  
+
     /* Queue Styles */
     .queue-container {
       border: 1px solid #e0e0e0;
@@ -154,7 +173,7 @@
       padding: 20px;
       background-color: #fafafa;
     }
-  
+
     .queue-header {
       font-weight: 600;
       margin-bottom: 15px;
@@ -164,7 +183,12 @@
       font-size: 18px;
       color: #444;
     }
-  
+
+    #queue-content {
+      max-height: 140px;
+      overflow: auto;
+    }
+
     .queue-item {
       padding: 10px 0;
       border-bottom: 1px solid #e0e0e0;
@@ -172,16 +196,16 @@
       justify-content: space-between;
       font-size: 16px;
     }
-  
+
     .queue-item:last-child {
       border-bottom: none;
     }
-  
+
     .current-item {
       font-weight: bold;
       color: #007bff;
     }
-  
+
     .queue-size {
       background-color: #007bff;
       color: white;
@@ -189,7 +213,7 @@
       border-radius: 20px;
       font-size: 14px;
     }
-  
+
     .refresh-btn {
       background: none;
       border: none;
@@ -199,25 +223,26 @@
       padding: 0;
       text-decoration: underline;
     }
-  
+
     /* Media Queries for Responsiveness */
     @media (max-width: 600px) {
       .container {
         padding: 20px;
         width: 100%;
       }
-  
+
       textarea {
         height: 160px;
       }
-  
+
       .queue-container {
         padding: 15px;
       }
     }
   </style>
-  
+
 </head>
+
 <body>
   <div class="container">
     <h1>Play Console Automation</h1>
@@ -232,7 +257,7 @@
         Run Automation
       </button>
     </form>
-    
+
     <!-- Queue Display Section -->
     <div class="queue-container">
       <div class="queue-header">
@@ -251,18 +276,50 @@
     const queueContent = document.getElementById('queue-content');
     const refreshQueueBtn = document.getElementById('refresh-queue');
 
+      // Function to check and update session status
+    async function checkSessionStatus() {
+      try {
+        const response = await fetch('/session_status');
+        const status = await response.json();
+        
+        sessionStatusElement.style.display = 'block';
+        
+        if (status.valid) {
+          sessionStatusElement.className = 'session-status session-valid';
+          sessionMessageElement.textContent = '✅ Session is valid and ready';
+          loginBtn.style.display = 'none';
+          submitBtn.disabled = false;
+        } else {
+          sessionStatusElement.className = 'session-status session-invalid';
+          sessionMessageElement.textContent = `⚠️ ${status.message}`;
+          loginBtn.style.display = 'inline-block';
+          submitBtn.disabled = true;
+        }
+        
+        return status.valid;
+      } catch (error) {
+        console.error('Error checking session status:', error);
+        sessionStatusElement.style.display = 'block';
+        sessionStatusElement.className = 'session-status session-invalid';
+        sessionMessageElement.textContent = '⚠️ Error checking session status';
+        loginBtn.style.display = 'none';
+        submitBtn.disabled = true;
+        return false;
+      }
+    }
+
     // Function to update queue display
     async function updateQueueDisplay() {
       try {
         const response = await fetch('/automation_status');
         const status = await response.json();
-        
+
         if (!status || !status.queue_list) {
           throw new Error('Invalid queue status data');
         }
-        
+
         let queueHtml = '';
-        
+
         if (status.queue_size === 0 && !status.current_processing) {
           queueHtml = '<div class="queue-item">No apps in queue</div>';
         } else {
@@ -273,7 +330,7 @@
                 <span>Processing</span>
               </div>`;
           }
-          
+
           status.queue_list.forEach((item, index) => {
             queueHtml += `
               <div class="queue-item">
@@ -282,9 +339,9 @@
               </div>`;
           });
         }
-        
+
         queueContent.innerHTML = queueHtml;
-        
+
         // Update queue header with count
         const queueHeader = document.querySelector('.queue-header span:first-child');
         const totalItems = status.queue_size + (status.current_processing ? 1 : 0);
@@ -293,10 +350,10 @@
         } else {
           queueHeader.textContent = 'Live Queue';
         }
-        
+
         // Enable the refresh button if queue is not empty
         refreshQueueBtn.disabled = status.queue_size === 0 && !status.current_processing;
-        
+
       } catch (error) {
         console.error('Error fetching queue status:', error);
         queueContent.innerHTML = '<div class="queue-item">Error loading queue</div>';
@@ -381,4 +438,5 @@
     setInterval(updateQueueDisplay, 5000);
   </script>
 </body>
+
 </html>

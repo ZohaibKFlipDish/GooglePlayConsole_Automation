@@ -20,6 +20,12 @@ if not os.path.exists(os.path.join(os.path.expanduser("~"), ".cache", "ms-playwr
 STORAGE_PATH = os.path.join(os.getcwd(), "storage", "auth.json")
 app = Flask(__name__)
 
+# Global state for session status
+session_status = {
+    "valid": False,
+    "message": "Session not initialized"
+}
+
 # Queue system
 class AutomationQueue:
     def __init__(self):
@@ -64,7 +70,19 @@ automation_queue = AutomationQueue()
 automation_status = {"running": False}
 DEFAULT_TIMEOUT = 300000  # 5 minutes
 
-# Wait for login (placeholder)
+async def check_session_validity(page):
+    try:
+        # Check if we're on a login page or session is expired
+        await page.wait_for_selector('text=Sign in', timeout=5000)
+        return False, "Session expired or not logged in"
+    except:
+        try:
+            # Check if we're on the expected page
+            await page.wait_for_selector("#main-content", timeout=5000)
+            return True, "Session is valid"
+        except:
+            return False, "Unable to verify session status"
+
 async def wait_for_login(page):
     print("🔐 Please log in manually...", flush=True)
     while True:
@@ -272,19 +290,40 @@ async def upload_csv_from_static_file(page, filename, timeout=30000):
             await asyncio.sleep(1)  # Wait before retrying
 
 async def automate_play_console():
+    global session_status
+    
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True, args=["--no-sandbox", "--start-maximized"])
 
         if os.path.exists(STORAGE_PATH):
             print("✅ Found existing session, loading it...", flush=True)
             context = await browser.new_context(storage_state=STORAGE_PATH, no_viewport=True)
+            page = await context.new_page()
+            
+            # Test if session is still valid
+            await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/", wait_until="domcontentloaded")
+            is_valid, message = await check_session_validity(page)
+            
+            if not is_valid:
+                session_status = {"valid": False, "message": message}
+                print(f"⚠️ Session is invalid: {message}", flush=True)
+                await page.close()
+                await context.close()
+                automation_queue.stop_processing()
+                automation_status["running"] = False
+                return
+            
+            session_status = {"valid": True, "message": "Session is valid"}
+            await page.close()
         else:
             print("🔓 No saved session, starting fresh...", flush=True)
+            session_status = {"valid": False, "message": "No session found, please log in"}
             context = await browser.new_context(no_viewport=True)
             page = await context.new_page()
             await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app", wait_until="domcontentloaded")
             await wait_for_login(page)
             await context.storage_state(path=STORAGE_PATH)
+            session_status = {"valid": True, "message": "New session created"}
             await page.close()
 
         print("🚀 Automation worker ready to process queue...", flush=True)
@@ -304,10 +343,21 @@ async def automate_play_console():
             try:
                 print(f"\n=== Processing app: {app_name} ===", flush=True)
                 await page.goto("https://play.google.com/console/u/0/developers/8453266419614197800/create-new-app", wait_until="domcontentloaded")
+                
+                # Check session again in case it expired during processing
+                is_valid, message = await check_session_validity(page)
+                if not is_valid:
+                    session_status = {"valid": False, "message": message}
+                    print(f"⚠️ Session expired during processing: {message}", flush=True)
+                    await page.close()
+                    automation_queue.stop_processing()
+                    automation_status["running"] = False
+                    return
+                
                 await page.wait_for_selector("#main-content", state="visible", timeout=DEFAULT_TIMEOUT)
 
                 input_xpath = '//*[@id="main-content"]/div[1]/div/div[1]/page-router-outlet/page-wrapper/div/create-new-app-page/console-form/console-form-row[1]/div/div[2]/div[1]/material-input/label/input'
-                input_field = await wait_for_element(page, f'xpath={input_xpath}')
+                input_field = await page.wait_for_selector(f'xpath={input_xpath}', timeout=DEFAULT_TIMEOUT)
                 
                 await input_field.fill("")
                 await asyncio.sleep(0.5)
@@ -765,12 +815,12 @@ PAYMENT METHODS: screen has been designed to show information, it is not possibl
                 print(f"🔥 Timeout for '{app_name}': {e}", flush=True)
             except Exception as e:
                 print(f"🔥 Error processing '{app_name}': {e}", flush=True)
+                traceback.print_exc()
             finally:
                 await page.close()
                 automation_queue.current_processing = None
 
             await asyncio.sleep(10)
-
 
 def start_automation():
     asyncio.run(automate_play_console())
@@ -790,6 +840,14 @@ def health_check():
 @app.route('/run_automation', methods=['POST'])
 def run_automation():
     try:
+        # Check session status before proceeding
+        if not session_status.get("valid", False):
+            return jsonify({
+                "status": "error",
+                "message": f"Cannot start automation: {session_status.get('message', 'Session not valid')}",
+                "session_status": session_status
+            })
+
         app_names_input = request.form.get("app_names")
         if app_names_input:
             app_names = [name.strip() for name in app_names_input.split("\n") if name.strip()]
@@ -799,7 +857,8 @@ def run_automation():
                 "status": "success",
                 "message": f"Automation started! {len(app_names)} apps added to queue.",
                 "queue_size": queue_size,
-                "running": automation_status["running"]
+                "running": automation_status["running"],
+                "session_status": session_status
             })
 
         return jsonify({"status": "error", "message": "No app names provided!"})
@@ -814,8 +873,13 @@ def automation_status_check():
         "running": automation_status["running"],
         "current_processing": status['current'],
         "queue_size": status['queue_size'],
-        "queue_list": status['queue_list']
+        "queue_list": status['queue_list'],
+        "session_status": session_status
     })
+
+@app.route('/session_status', methods=['GET'])
+def get_session_status():
+    return jsonify(session_status)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5050))
